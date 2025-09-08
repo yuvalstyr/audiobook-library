@@ -1,0 +1,129 @@
+{
+    "version": "1.0",
+    "lastUpdated": "2025-01-07T15:30:00Z",
+    "audiobooks": [
+        {
+            "id": "sample_1704628000000_abc123",
+            "title": "The Hobbit",
+            "url": "https://www.audible.com/pd/The-Hobbit-Audiobook/B0099RKQLY",
+            "image": "https://m.media-amazon.com/images/I/51UoqRQyFcL._SL500_.jpg",
+            "author": "J.R.R. Tolkien",
+            "narrator": "Rob Inglis",
+            "length": "11 hrs and 5 mins",
+            "releaseDate": "2012-09-20",
+            "rating": 4.7,
+            "price": 17.99,
+            "genres": [
+                "fantasy",
+                "adventure",
+                "classic"
+            ],
+            "moods": [
+                "epic",
+                "immersive",
+                "nostalgic"
+            ]
+        },
+        {
+            "id": "sample_1704628100000_def456",
+            "title": "Atomic Habits",
+            "url": "https://www.audible.com/pd/Atomic-Habits-Audiobook/1524779261",
+            "image": "https://m.media-amazon.com/images/I/51B7kuFwFcL._SL500_.jpg",
+            "author": "James Clear",
+            "narrator": "James Clear",
+            "length": "5 hrs and 35 mins",
+            "releaseDate": "2018-10-16",
+            "rating": 4.8,
+            "price": 14.95,
+            "genres": [
+                "self-help",
+                "productivity"
+            ],
+            "moods": [
+                "motivational",
+                "practical",
+                "inspiring"
+            ]
+        },
+        {
+            "id": "sample_1704628200000_ghi789",
+            "title": "Project Hail Mary",
+            "url": "https://www.audible.com/pd/Project-Hail-Mary-Audiobook/B08G9PRS1K",
+            "image": "https://m.media-amazon.com/images/I/51j5p18mJNL._SL500_.jpg",
+            "author": "Andy Weir",
+            "narrator": "Ray Porter",
+            "length": "16 hrs and 10 mins",
+            "releaseDate": "2021-05-04",
+            "rating": 4.6,
+            "price": 19.99,
+            "genres": [
+                "sci-fi",
+                "adventure"
+            ],
+            "moods": [
+                "funny",
+                "technical",
+                "fast-paced"
+            ]
+        },
+        {
+            "id": "sample_1704628300000_jkl012",
+            "title": "Educated",
+            "url": "https://www.audible.com/pd/Educated-Audiobook/B077LBH58Z",
+            "image": "https://m.media-amazon.com/images/I/41VHQhJ4AFL._SL500_.jpg",
+            "author": "Tara Westover",
+            "narrator": "Julia Whelan",
+            "length": "12 hrs and 10 mins",
+            "releaseDate": "2018-02-20",
+            "rating": 4.5,
+            "price": 16.50,
+            "genres": [
+                "memoir",
+                "biography"
+            ],
+            "moods": [
+                "inspiring",
+                "emotional",
+                "thought-provoking"
+            ]
+        },
+        {
+            "id": "sample_1704628400000_mno345",
+            "title": "The Seven Husbands of Evelyn Hugo",
+            "url": "https://www.audible.com/pd/The-Seven-Husbands-of-Evelyn-Hugo-Audiobook/B071Z96XYG",
+            "image": "https://m.media-amazon.com/images/I/51IiOWYe7wL._SL500_.jpg",
+            "author": "Taylor Jenkins Reid",
+            "narrator": "Alma Cuervo, Julia Whelan, Robin Miles",
+            "length": "12 hrs and 10 mins",
+            "releaseDate": "2017-06-13",
+            "rating": 4.4,
+            "price": 15.99,
+            "genres": [
+                "fiction",
+                "romance",
+                "drama"
+            ],
+            "moods": [
+                "glamorous",
+                "emotional",
+                "captivating"
+            ]
+        }
+    ],
+    "customGenres": [
+        "self-help",
+        "productivity",
+        "memoir",
+        "biography",
+        "drama"
+    ],
+    "customMoods": [
+        "motivational",
+        "practical",
+        "inspiring",
+        "emotional",
+        "thought-provoking",
+        "glamorous",
+        "captivating"
+    ]
+}

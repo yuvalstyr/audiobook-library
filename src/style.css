@@ -1,0 +1,212 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+
+    /* Improve focus visibility for accessibility */
+    *:focus {
+        @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+    }
+
+    /* Ensure minimum touch target size on mobile */
+    @media (max-width: 768px) {
+
+        button,
+        [role="button"],
+        input[type="checkbox"],
+        input[type="radio"],
+        .touch-target {
+            min-height: 44px;
+            min-width: 44px;
+        }
+    }
+
+    /* Reduce motion for users who prefer it */
+    @media (prefers-reduced-motion: reduce) {
+
+        *,
+        *::before,
+        *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+        }
+    }
+
+    /* High contrast mode support */
+    @media (prefers-contrast: high) {
+        .book-card {
+            @apply border-2 border-gray-800;
+        }
+
+        .btn-primary {
+            @apply border-2 border-blue-800;
+        }
+
+        .btn-secondary {
+            @apply border-2 border-gray-600;
+        }
+    }
+}
+
+@layer components {
+    .book-card {
+        @apply bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300;
+    }
+
+    /* Enhanced hover/focus states for better accessibility */
+    .book-card:hover,
+    .book-card:focus-within {
+        @apply shadow-xl transform scale-105;
+    }
+
+    /* Touch-friendly book card interactions */
+    @media (max-width: 768px) {
+        .book-card {
+            @apply active:scale-95 transition-transform duration-150;
+        }
+
+        .book-card:hover {
+            @apply transform-none shadow-lg;
+        }
+    }
+
+    .genre-tag {
+        @apply px-2 py-1 rounded-full text-xs font-medium;
+    }
+
+    .btn-primary {
+        @apply bg-blue-600 hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-800 text-white font-medium py-2 px-4 rounded-lg transition-colors min-h-10 flex items-center justify-center;
+    }
+
+    .btn-secondary {
+        @apply bg-gray-200 hover:bg-gray-300 focus:bg-gray-300 active:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors min-h-10 flex items-center justify-center;
+    }
+
+    /* Mobile-specific button styles */
+    @media (max-width: 768px) {
+
+        .btn-primary,
+        .btn-secondary {
+            @apply py-3 px-4 text-sm;
+        }
+    }
+
+    /* Filter sidebar mobile styles */
+    .filters-mobile-open {
+        @apply transform translate-x-0;
+    }
+
+    /* Screen reader only content */
+    .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    .sr-only.focus:not-sr-only {
+        position: static;
+        width: auto;
+        height: auto;
+        padding: inherit;
+        margin: inherit;
+        overflow: visible;
+        clip: auto;
+        white-space: normal;
+    }
+
+    /* Enhanced focus indicators */
+    .focus-visible {
+        @apply ring-2 ring-blue-500 ring-offset-2;
+    }
+
+    /* Touch-friendly checkbox styles */
+    input[type="checkbox"] {
+        @apply w-5 h-5;
+    }
+
+    @media (max-width: 768px) {
+        input[type="checkbox"] {
+            @apply w-6 h-6;
+        }
+    }
+
+    /* Loading animation accessibility */
+    .animate-spin {
+        animation: spin 1s linear infinite;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .animate-spin {
+            animation: none;
+        }
+    }
+
+    /* Modal and overlay accessibility */
+    .modal-overlay {
+        @apply fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4;
+    }
+
+    .modal-content {
+        @apply bg-white rounded-lg shadow-xl max-w-lg w-full max-h-screen overflow-y-auto;
+    }
+
+    /* Mobile modal adjustments */
+    @media (max-width: 768px) {
+        .modal-content {
+            @apply max-w-full mx-4 max-h-[90vh];
+        }
+    }
+}
+
+@layer utilities {
+    .line-clamp-1 {
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 1;
+    }
+
+    .line-clamp-2 {
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+    }
+
+    .aspect-book {
+        aspect-ratio: 3 / 4;
+    }
+
+    /* Touch-friendly spacing utilities */
+    .touch-spacing {
+        @apply p-3;
+    }
+
+    @media (min-width: 768px) {
+        .touch-spacing {
+            @apply p-2;
+        }
+    }
+
+    /* Keyboard navigation helpers */
+    .keyboard-focusable {
+        @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+    }
+
+    /* Mobile-first responsive text */
+    .responsive-text {
+        @apply text-sm sm:text-base;
+    }
+
+    .responsive-heading {
+        @apply text-lg sm:text-xl lg:text-2xl;
+    }
+}

@@ -1,0 +1,180 @@
+{
+    "version": "1.0",
+    "lastUpdated": "2025-01-07T10:30:00Z",
+    "audiobooks": [
+        {
+            "id": "audiobook_1704628200000_abc123def",
+            "title": "Three Men in a Boat",
+            "url": "https://www.audible.com/pd/Three-Men-in-a-Boat-Audiobook/B004V4OC8O",
+            "image": "https://m.media-amazon.com/images/I/51rF+AqVVyL._SL500_.jpg",
+            "author": "Jerome K. Jerome",
+            "narrator": "Steven Crossley",
+            "length": "6 hrs and 40 mins",
+            "releaseDate": "2011-02-23",
+            "rating": 4.5,
+            "price": 10.23,
+            "genres": [
+                "done",
+                "classic"
+            ],
+            "moods": [
+                "funny",
+                "light"
+            ]
+        },
+        {
+            "id": "audiobook_1704628300000_def456ghi",
+            "title": "The Martian",
+            "url": "https://www.audible.com/pd/The-Martian-Audiobook/B00B5HZGUG",
+            "image": "https://m.media-amazon.com/images/I/51ZLmDlrNaL._SL500_.jpg",
+            "author": "Andy Weir",
+            "narrator": "R.C. Bray",
+            "length": "10 hrs and 53 mins",
+            "releaseDate": "2014-03-01",
+            "rating": 4.8,
+            "price": 14.95,
+            "genres": [
+                "sci-fi",
+                "next"
+            ],
+            "moods": [
+                "fast-paced",
+                "technical"
+            ]
+        },
+        {
+            "id": "audiobook_1704628400000_ghi789jkl",
+            "title": "The Name of the Wind",
+            "url": "https://www.audible.com/pd/The-Name-of-the-Wind-Audiobook/B002UZMLXM",
+            "image": "https://m.media-amazon.com/images/I/51UJHKz1FvL._SL500_.jpg",
+            "author": "Patrick Rothfuss",
+            "narrator": "Nick Podehl",
+            "length": "27 hrs and 55 mins",
+            "releaseDate": "2007-03-27",
+            "rating": 4.6,
+            "price": 19.99,
+            "genres": [
+                "fantasy",
+                "next"
+            ],
+            "moods": [
+                "epic",
+                "immersive"
+            ]
+        },
+        {
+            "id": "audiobook_1704628500000_jkl012mno",
+            "title": "Gone Girl",
+            "url": "https://www.audible.com/pd/Gone-Girl-Audiobook/B008ELGS9Y",
+            "image": "https://m.media-amazon.com/images/I/41DWocUSCeL._SL500_.jpg",
+            "author": "Gillian Flynn",
+            "narrator": "Julia Whelan, Kirby Heyborne",
+            "length": "19 hrs and 11 mins",
+            "releaseDate": "2012-06-05",
+            "rating": 4.3,
+            "price": 16.50,
+            "genres": [
+                "thriller",
+                "done"
+            ],
+            "moods": [
+                "dark",
+                "psychological"
+            ]
+        },
+        {
+            "id": "audiobook_1704628600000_mno345pqr",
+            "title": "Ready Player One",
+            "url": "https://www.audible.com/pd/Ready-Player-One-Audiobook/B005FRGT44",
+            "image": "https://m.media-amazon.com/images/I/51dI4k2OAYL._SL500_.jpg",
+            "author": "Ernest Cline",
+            "narrator": "Wil Wheaton",
+            "length": "15 hrs and 40 mins",
+            "releaseDate": "2011-08-16",
+            "rating": 4.4,
+            "price": 13.75,
+            "genres": [
+                "sci-fi",
+                "action"
+            ],
+            "moods": [
+                "nostalgic",
+                "fast-paced"
+            ]
+        },
+        {
+            "id": "audiobook_1704628700000_pqr678stu",
+            "title": "The Hitchhiker's Guide to the Galaxy",
+            "url": "https://www.audible.com/pd/The-Hitchhikers-Guide-to-the-Galaxy-Audiobook/B002V0QK42",
+            "image": "https://m.media-amazon.com/images/I/51MzUz8rQcL._SL500_.jpg",
+            "author": "Douglas Adams",
+            "narrator": "Stephen Fry",
+            "length": "5 hrs and 51 mins",
+            "releaseDate": "2005-04-01",
+            "rating": 4.7,
+            "price": 9.99,
+            "genres": [
+                "sci-fi",
+                "done"
+            ],
+            "moods": [
+                "funny",
+                "absurd"
+            ]
+        },
+        {
+            "id": "audiobook_1704628800000_stu901vwx",
+            "title": "Dune",
+            "url": "https://www.audible.com/pd/Dune-Audiobook/B002V8KQOC",
+            "image": "https://m.media-amazon.com/images/I/51g5YXVLhyL._SL500_.jpg",
+            "author": "Frank Herbert",
+            "narrator": "Scott Brick, Orlagh Cassidy, Euan Morton",
+            "length": "21 hrs and 2 mins",
+            "releaseDate": "2007-08-07",
+            "rating": 4.5,
+            "price": 18.99,
+            "genres": [
+                "sci-fi",
+                "next"
+            ],
+            "moods": [
+                "epic",
+                "complex"
+            ]
+        },
+        {
+            "id": "audiobook_1704628900000_vwx234yza",
+            "title": "The Girl with the Dragon Tattoo",
+            "url": "https://www.audible.com/pd/The-Girl-with-the-Dragon-Tattoo-Audiobook/B002V8KQOC",
+            "image": "https://m.media-amazon.com/images/I/51ZqBjqy7tL._SL500_.jpg",
+            "author": "Stieg Larsson",
+            "narrator": "Simon Vance",
+            "length": "18 hrs and 18 mins",
+            "releaseDate": "2008-09-16",
+            "rating": 4.2,
+            "price": 15.99,
+            "genres": [
+                "thriller",
+                "next"
+            ],
+            "moods": [
+                "dark",
+                "intense"
+            ]
+        }
+    ],
+    "customGenres": [
+        "classic",
+        "epic",
+        "technical"
+    ],
+    "customMoods": [
+        "light",
+        "nostalgic",
+        "absurd",
+        "psychological",
+        "immersive",
+        "complex",
+        "intense"
+    ]
+}

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Audiobook Library</title>
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+    <!-- Skip to main content link for screen readers -->
+    <a href="#main-content"
+        class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-blue-600 text-white px-4 py-2 rounded-lg z-50">
+        Skip to main content
+    </a>
+
+    <div id="app">
+        <header class="bg-white shadow-sm border-b" role="banner">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 sm:py-6 gap-4">
+                    <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Audiobook Library</h1>
+
+                    <!-- Mobile filter toggle button -->
+                    <button id="mobile-filter-toggle" class="lg:hidden btn-secondary order-first sm:order-none"
+                        aria-label="Toggle filters" aria-expanded="false" aria-controls="filters-container">
+                        <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z" />
+                        </svg>
+                        Filters
+                    </button>
+
+                    <div
+                        class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+                        <div id="search-container" class="flex-1 sm:flex-initial min-w-0 sm:min-w-64"></div>
+                        <div class="flex gap-2">
+                            <button id="import-export-btn" class="btn-secondary flex-1 sm:flex-initial"
+                                aria-label="Import or export audiobooks">
+                                <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                    aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 12l3 3m0 0l3-3m-3 3V9" />
+                                </svg>
+                                <span class="hidden sm:inline">Import/Export</span>
+                                <span class="sm:hidden">Import</span>
+                            </button>
+                            <button id="add-book-btn" class="btn-primary flex-1 sm:flex-initial"
+                                aria-label="Add new audiobook">
+                                <svg class="w-4 h-4 mr-2 inline sm:hidden" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                </svg>
+                                <span class="hidden sm:inline">Add Book</span>
+                                <span class="sm:hidden">Add</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main id="main-content" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8" role="main">
+            <div class="flex flex-col lg:flex-row gap-4 lg:gap-8">
+                <!-- Filter Sidebar -->
+                <aside class="lg:w-64 flex-shrink-0 order-2 lg:order-1" role="complementary"
+                    aria-label="Filter options">
+                    <!-- Mobile filter overlay -->
+                    <div id="mobile-filter-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden hidden"
+                        aria-hidden="true"></div>
+
+                    <!-- Filter container -->
+                    <div id="filters-container"
+                        class="fixed inset-y-0 left-0 w-80 max-w-full bg-white shadow-xl z-50 transform -translate-x-full transition-transform duration-300 ease-in-out lg:relative lg:inset-auto lg:w-auto lg:transform-none lg:transition-none lg:shadow-sm lg:rounded-lg p-4 lg:p-6 overflow-y-auto"
+                        aria-hidden="true">
+                        <!-- Mobile filter header -->
+                        <div class="flex items-center justify-between mb-4 lg:hidden">
+                            <h2 class="text-lg font-semibold text-gray-900">Filters</h2>
+                            <button id="mobile-filter-close"
+                                class="p-2 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg"
+                                aria-label="Close filters">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                    aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <!-- Filters will be rendered here -->
+                    </div>
+                </aside>
+
+                <!-- Gallery -->
+                <div class="flex-1 order-1 lg:order-2">
+                    <div id="gallery-container" role="region" aria-label="Audiobook collection">
+                        <!-- Gallery will be rendered here -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>
