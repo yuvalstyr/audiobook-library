@@ -3,13 +3,15 @@ import './style.css'
 import { Gallery } from './components/Gallery.js'
 import { SearchBar } from './components/SearchBar.js'
 import { Filters } from './components/Filters.js'
-import { BookForm } from './components/BookForm.js'
-import { BookDetailModal } from './components/BookDetailModal.js'
-import { DeleteConfirmationModal } from './components/DeleteConfirmationModal.js'
-import { ImportExportModal } from './components/ImportExportModal.js'
+// Lazy load modals for better initial bundle size
+// import { BookForm } from './components/BookForm.js'
+// import { BookDetailModal } from './components/BookDetailModal.js'
+// import { DeleteConfirmationModal } from './components/DeleteConfirmationModal.js'
+// import { ImportExportModal } from './components/ImportExportModal.js'
 import { DataService } from './services/DataService.js'
 import { StorageService } from './services/StorageService.js'
 import { FilterManager } from './utils/FilterManager.js'
+import { loadingIndicator } from './utils/LoadingIndicator.js'
 
 class AudiobookLibraryApp {
     constructor() {
@@ -80,30 +82,11 @@ class AudiobookLibraryApp {
             });
         }
 
-        // Initialize book form
-        this.bookForm = new BookForm(
-            (audiobook, action) => this.handleBookFormSubmit(audiobook, action),
-            () => this.handleBookFormCancel()
-        );
-
-        // Initialize book detail modal
-        this.bookDetailModal = new BookDetailModal(
-            (audiobook) => this.handleEditBook(audiobook),
-            (audiobook) => this.handleDeleteBookRequest(audiobook),
-            () => this.handleBookDetailClose()
-        );
-
-        // Initialize delete confirmation modal
-        this.deleteConfirmationModal = new DeleteConfirmationModal(
-            (audiobook) => this.handleDeleteBookConfirm(audiobook),
-            () => this.handleDeleteBookCancel()
-        );
-
-        // Initialize import/export modal
-        this.importExportModal = new ImportExportModal(
-            (collection, stats) => this.handleImportComplete(collection, stats),
-            (result, format) => this.handleExportComplete(result, format)
-        );
+        // Modals will be lazy loaded when needed
+        this.bookForm = null;
+        this.bookDetailModal = null;
+        this.deleteConfirmationModal = null;
+        this.importExportModal = null;
     }
 
     async loadCollection() {
@@ -401,16 +384,43 @@ class AudiobookLibraryApp {
         return 1; // default
     }
 
-    handleBookSelection(audiobook) {
+    async handleBookSelection(audiobook) {
         console.log('Book selected:', audiobook);
-        if (this.bookDetailModal) {
-            this.bookDetailModal.show(audiobook);
+
+        if (!this.bookDetailModal) {
+            loadingIndicator.show('book-detail', 'Loading book details...');
+            try {
+                const { BookDetailModal } = await import('./components/BookDetailModal.js');
+                this.bookDetailModal = new BookDetailModal(
+                    (audiobook) => this.handleEditBook(audiobook),
+                    (audiobook) => this.handleDeleteBookRequest(audiobook),
+                    () => this.handleBookDetailClose()
+                );
+            } finally {
+                loadingIndicator.hide('book-detail');
+            }
         }
+
+        this.bookDetailModal.show(audiobook);
     }
 
-    handleAddBook() {
+    async handleAddBook() {
         console.log('Add book requested');
-        if (this.bookForm && this.collection) {
+
+        if (!this.bookForm) {
+            loadingIndicator.show('book-form', 'Loading form...');
+            try {
+                const { BookForm } = await import('./components/BookForm.js');
+                this.bookForm = new BookForm(
+                    (audiobook, action) => this.handleBookFormSubmit(audiobook, action),
+                    () => this.handleBookFormCancel()
+                );
+            } finally {
+                loadingIndicator.hide('book-form');
+            }
+        }
+
+        if (this.collection) {
             this.bookForm.showAdd(
                 this.collection.customGenres || [],
                 this.collection.customMoods || []
@@ -418,9 +428,23 @@ class AudiobookLibraryApp {
         }
     }
 
-    handleEditBook(audiobook) {
+    async handleEditBook(audiobook) {
         console.log('Edit book requested:', audiobook.title);
-        if (this.bookForm && this.collection) {
+
+        if (!this.bookForm) {
+            loadingIndicator.show('book-form', 'Loading form...');
+            try {
+                const { BookForm } = await import('./components/BookForm.js');
+                this.bookForm = new BookForm(
+                    (audiobook, action) => this.handleBookFormSubmit(audiobook, action),
+                    () => this.handleBookFormCancel()
+                );
+            } finally {
+                loadingIndicator.hide('book-form');
+            }
+        }
+
+        if (this.collection) {
             // Don't hide the detail modal here - let the form handle it
             this.bookForm.showEdit(
                 audiobook,
@@ -545,14 +569,28 @@ class AudiobookLibraryApp {
      * Handle delete book request from detail modal
      * @param {Audiobook} audiobook - Audiobook to delete
      */
-    handleDeleteBookRequest(audiobook) {
+    async handleDeleteBookRequest(audiobook) {
         console.log('Delete book requested:', audiobook.title);
-        if (this.deleteConfirmationModal) {
-            // Hide detail modal first
-            this.bookDetailModal.hide();
-            // Show delete confirmation
-            this.deleteConfirmationModal.show(audiobook);
+
+        if (!this.deleteConfirmationModal) {
+            loadingIndicator.show('delete-modal', 'Loading...');
+            try {
+                const { DeleteConfirmationModal } = await import('./components/DeleteConfirmationModal.js');
+                this.deleteConfirmationModal = new DeleteConfirmationModal(
+                    (audiobook) => this.handleDeleteBookConfirm(audiobook),
+                    () => this.handleDeleteBookCancel()
+                );
+            } finally {
+                loadingIndicator.hide('delete-modal');
+            }
         }
+
+        // Hide detail modal first
+        if (this.bookDetailModal) {
+            this.bookDetailModal.hide();
+        }
+        // Show delete confirmation
+        this.deleteConfirmationModal.show(audiobook);
     }
 
     /**
@@ -608,9 +646,23 @@ class AudiobookLibraryApp {
         console.log('Delete book cancelled');
     }
 
-    handleImportExport() {
+    async handleImportExport() {
         console.log('Import/Export requested');
-        if (this.importExportModal && this.collection) {
+
+        if (!this.importExportModal) {
+            loadingIndicator.show('import-export', 'Loading import/export...');
+            try {
+                const { ImportExportModal } = await import('./components/ImportExportModal.js');
+                this.importExportModal = new ImportExportModal(
+                    (collection, stats) => this.handleImportComplete(collection, stats),
+                    (result, format) => this.handleExportComplete(result, format)
+                );
+            } finally {
+                loadingIndicator.hide('import-export');
+            }
+        }
+
+        if (this.collection) {
             this.importExportModal.show(this.collection);
         }
     }

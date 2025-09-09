@@ -52,23 +52,27 @@
 
 @layer components {
     .book-card {
-        @apply bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300;
+        @apply bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 ease-out;
+        transform-origin: center;
+        will-change: transform, box-shadow;
     }
 
     /* Enhanced hover/focus states for better accessibility */
     .book-card:hover,
     .book-card:focus-within {
-        @apply shadow-xl transform scale-105;
+        @apply shadow-xl;
+        transform: scale(1.02) translateY(-2px);
     }
 
     /* Touch-friendly book card interactions */
     @media (max-width: 768px) {
         .book-card {
-            @apply active:scale-95 transition-transform duration-150;
+            @apply active:scale-95 transition-transform duration-150 ease-out;
         }
 
         .book-card:hover {
-            @apply transform-none shadow-lg;
+            transform: none;
+            @apply shadow-lg;
         }
     }
 
@@ -143,9 +147,72 @@
         animation: spin 1s linear infinite;
     }
 
+    /* Smooth skeleton loading animation */
+    .animate-pulse {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @keyframes pulse {
+
+        0%,
+        100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: .5;
+        }
+    }
+
+    /* Smooth fade-in animation for loaded images */
+    .fade-in {
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    /* Staggered animation for gallery items */
+    .stagger-animation {
+        animation: slideInUp 0.4s ease-out;
+        animation-fill-mode: both;
+    }
+
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
     @media (prefers-reduced-motion: reduce) {
-        .animate-spin {
+
+        .animate-spin,
+        .animate-pulse,
+        .fade-in,
+        .stagger-animation {
             animation: none;
+        }
+
+        .book-card {
+            transition: none;
+        }
+
+        .book-card:hover,
+        .book-card:focus-within {
+            transform: none;
         }
     }
 
@@ -183,6 +250,35 @@
 
     .aspect-book {
         aspect-ratio: 3 / 4;
+    }
+
+    /* Performance optimizations */
+    .gpu-accelerated {
+        transform: translateZ(0);
+        will-change: transform;
+    }
+
+    .contain-layout {
+        contain: layout;
+    }
+
+    .contain-paint {
+        contain: paint;
+    }
+
+    .contain-strict {
+        contain: strict;
+    }
+
+    /* Smooth scrolling */
+    .smooth-scroll {
+        scroll-behavior: smooth;
+    }
+
+    /* Image optimization */
+    .optimized-image {
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
     }
 
     /* Touch-friendly spacing utilities */

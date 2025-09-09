@@ -1,3 +1,5 @@
+import { debounce } from '../utils/performance.js';
+
 /**
  * SearchBar component for real-time text filtering of audiobooks
  * Searches across title, author, and narrator fields
@@ -7,8 +9,15 @@ export class SearchBar {
         this.container = container;
         this.onSearchChange = onSearchChange;
         this.searchTerm = '';
-        this.debounceTimeout = null;
-        this.debounceDelay = 300; // ms
+        this.lastSearchTerm = ''; // Track last search to avoid unnecessary calls
+
+        // Create debounced search function for better performance
+        this.debouncedSearch = debounce((searchTerm) => {
+            if (this.lastSearchTerm !== searchTerm && this.onSearchChange) {
+                this.lastSearchTerm = searchTerm;
+                this.onSearchChange(searchTerm);
+            }
+        }, 150);
 
         this.render();
         this.setupEventListeners();
@@ -89,19 +98,16 @@ export class SearchBar {
      * @param {string} value - Search input value
      */
     handleSearchInput(value) {
-        // Clear existing timeout
-        if (this.debounceTimeout) {
-            clearTimeout(this.debounceTimeout);
-        }
+        const trimmedValue = value.trim();
+        this.searchTerm = trimmedValue;
+        this.updateClearButton();
 
-        // Set new timeout for debounced search
-        this.debounceTimeout = setTimeout(() => {
-            this.updateSearch(value);
-        }, this.debounceDelay);
+        // Use the debounced search function
+        this.debouncedSearch(trimmedValue);
     }
 
     /**
-     * Update search term and trigger callback
+     * Update search term and trigger callback immediately (for programmatic updates)
      * @param {string} searchTerm - New search term
      */
     updateSearch(searchTerm) {
@@ -111,7 +117,9 @@ export class SearchBar {
             this.searchTerm = trimmedTerm;
             this.updateClearButton();
 
-            if (this.onSearchChange) {
+            // Trigger callback immediately for programmatic updates
+            if (this.lastSearchTerm !== this.searchTerm && this.onSearchChange) {
+                this.lastSearchTerm = this.searchTerm;
                 this.onSearchChange(this.searchTerm);
             }
         }
@@ -212,8 +220,9 @@ export class SearchBar {
      * Destroy the search bar and clean up resources
      */
     destroy() {
-        if (this.debounceTimeout) {
-            clearTimeout(this.debounceTimeout);
+        // Clean up debounced function
+        if (this.debouncedSearch) {
+            this.debouncedSearch = null;
         }
 
         if (this.container) {

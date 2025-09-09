@@ -1,3 +1,5 @@
+import { lazyLoader } from '../utils/LazyLoader.js';
+
 export class BookCard {
     constructor(audiobook) {
         this.audiobook = audiobook;
@@ -10,14 +12,22 @@ export class BookCard {
         this.element.setAttribute('data-book-id', this.audiobook.id);
 
         this.element.innerHTML = `
-            <div class="relative aspect-book overflow-hidden">
+            <div class="relative aspect-book overflow-hidden bg-gray-100">
                 <img 
-                    src="${this.audiobook.image}" 
+                    data-src="${this.audiobook.image}"
+                    src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1' height='1'%3E%3C/svg%3E"
                     alt="Cover of ${this.escapeHtml(this.audiobook.title)}"
-                    class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                    class="w-full h-full object-cover transition-all duration-300 group-hover:scale-110"
                     loading="lazy"
-                    onerror="this.src='/images/placeholder.svg'; this.onerror=null;"
+                    decoding="async"
                 />
+                <div class="image-skeleton absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 animate-pulse">
+                    <div class="flex items-center justify-center h-full">
+                        <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                </div>
                 
                 <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <div class="absolute top-2 left-2">
@@ -71,6 +81,12 @@ export class BookCard {
         const editBtn = this.element.querySelector('.edit-btn');
         if (editBtn) {
             editBtn.addEventListener('click', (e) => this.handleEditClick(e));
+        }
+
+        // Set up lazy loading for the image
+        const img = this.element.querySelector('img');
+        if (img) {
+            lazyLoader.observe(img);
         }
 
         return this.element;
@@ -194,8 +210,16 @@ export class BookCard {
     }
 
     destroy() {
-        if (this.element && this.element.parentNode) {
-            this.element.parentNode.removeChild(this.element);
+        if (this.element) {
+            // Clean up lazy loading observer
+            const img = this.element.querySelector('img');
+            if (img) {
+                lazyLoader.unobserve(img);
+            }
+
+            if (this.element.parentNode) {
+                this.element.parentNode.removeChild(this.element);
+            }
         }
         this.element = null;
     }

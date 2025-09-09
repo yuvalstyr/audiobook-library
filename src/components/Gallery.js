@@ -84,16 +84,32 @@ export class Gallery {
     }
 
     /**
-     * Render the loading state
+     * Render the loading state with skeleton cards
      */
     renderLoading() {
-        this.contentContainer.innerHTML = `
-            <div class="flex justify-center items-center py-16">
-                <div class="text-center">
-                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p class="text-gray-600">Loading your audiobook library...</p>
+        const skeletonCards = Array.from({ length: 12 }, (_, index) => `
+            <div class="book-card animate-pulse" role="presentation" aria-hidden="true">
+                <div class="relative aspect-book overflow-hidden bg-gray-200">
+                    <div class="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 animate-pulse"></div>
+                </div>
+                <div class="p-4 space-y-3">
+                    <div class="h-4 bg-gray-200 rounded animate-pulse"></div>
+                    <div class="h-3 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+                    <div class="flex space-x-2">
+                        <div class="h-6 bg-gray-200 rounded-full w-16 animate-pulse"></div>
+                        <div class="h-6 bg-gray-200 rounded-full w-12 animate-pulse"></div>
+                    </div>
                 </div>
             </div>
+        `).join('');
+
+        this.contentContainer.innerHTML = `
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-6" 
+                 role="grid" 
+                 aria-label="Loading audiobook collection">
+                ${skeletonCards}
+            </div>
+            <div class="sr-only" aria-live="polite">Loading your audiobook library...</div>
         `;
     }
 
@@ -150,13 +166,14 @@ export class Gallery {
         // Clear existing book cards
         this.bookCards.clear();
 
-        // Create grid container
+        // Create grid container with performance optimizations
         this.contentContainer.innerHTML = `
             <div 
-                class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-6" 
+                class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-6 contain-layout" 
                 id="books-grid"
                 role="grid"
                 aria-label="Audiobook collection"
+                style="contain: layout style;"
             >
                 <!-- Book cards will be inserted here -->
             </div>
@@ -164,7 +181,7 @@ export class Gallery {
 
         const gridContainer = this.contentContainer.querySelector('#books-grid');
 
-        // Create and render book cards
+        // Create and render book cards with staggered animation
         this.filteredAudiobooks.forEach((audiobook, index) => {
             const bookCard = new BookCard(audiobook);
             const cardElement = bookCard.render();
@@ -173,6 +190,10 @@ export class Gallery {
             cardElement.setAttribute('role', 'gridcell');
             cardElement.setAttribute('aria-posinset', index + 1);
             cardElement.setAttribute('aria-setsize', this.filteredAudiobooks.length);
+
+            // Add staggered animation with delay
+            cardElement.classList.add('stagger-animation');
+            cardElement.style.animationDelay = `${Math.min(index * 50, 500)}ms`;
 
             this.bookCards.set(audiobook.id, bookCard);
             gridContainer.appendChild(cardElement);

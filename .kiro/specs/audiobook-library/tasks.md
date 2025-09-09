@@ -71,14 +71,14 @@
   - Ensure WCAG compliance with proper ARIA labels and focus management
   - _Requirements: 6.1, 6.2, 6.3, 6.4_
 
-- [ ] 11. Set up GitHub Pages deployment
+- [x] 11. Set up GitHub Pages deployment
   - Configure GitHub Actions for automated deployment
   - Set up Vite build configuration for GitHub Pages
   - Create deployment workflow with proper base path handling
   - Test production build and deployment process
   - _Requirements: 7.1, 7.2_
 
-- [ ] 12. Add performance optimizations and polish
+- [x] 12. Add performance optimizations and polish
   - Implement lazy loading for book cover images
   - Add loading states and skeleton screens
   - Optimize bundle size and implement code splitting if needed
