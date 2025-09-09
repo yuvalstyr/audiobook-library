@@ -12,10 +12,11 @@
         "verify-build": "node scripts/verify-build.js"
     },
     "devDependencies": {
-        "vite": "^5.0.0",
-        "tailwindcss": "^3.4.0",
         "autoprefixer": "^10.4.0",
+        "jsdom": "^26.1.0",
         "postcss": "^8.4.0",
+        "tailwindcss": "^3.4.0",
+        "vite": "^5.0.0",
         "vitest": "^1.0.0"
     }
 }

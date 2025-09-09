@@ -2,15 +2,68 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { DataService } from './DataService.js';
 import { Audiobook } from '../models/Audiobook.js';
 
+// Mock localStorage
+const localStorageMock = {
+    getItem: vi.fn(),
+    setItem: vi.fn(),
+    removeItem: vi.fn(),
+    clear: vi.fn()
+};
+global.localStorage = localStorageMock;
+
 // Mock fetch globally
 global.fetch = vi.fn();
+
+// Mock the sync services
+vi.mock('./SyncManager.js', () => ({
+    SyncManager: vi.fn().mockImplementation(() => ({
+        initialize: vi.fn().mockResolvedValue(undefined),
+        sync: vi.fn().mockResolvedValue({ success: true }),
+        syncFromCloud: vi.fn().mockResolvedValue({ success: true }),
+        getSyncStatus: vi.fn().mockResolvedValue({ isInitialized: true }),
+        destroy: vi.fn(),
+        on: vi.fn(),
+        off: vi.fn(),
+        emit: vi.fn()
+    }))
+}));
+
+vi.mock('./LocalCacheService.js', () => ({
+    LocalCacheService: vi.fn().mockImplementation(() => ({
+        saveData: vi.fn().mockResolvedValue(undefined),
+        loadData: vi.fn().mockResolvedValue(null),
+        getDeviceId: vi.fn().mockReturnValue('test-device-id'),
+        getSyncMetadata: vi.fn().mockResolvedValue({}),
+        updateSyncMetadata: vi.fn().mockResolvedValue(undefined)
+    }))
+}));
 
 describe('DataService', () => {
     let dataService;
     let mockCollectionData;
 
     beforeEach(() => {
+        // Clear all mocks
+        vi.clearAllMocks();
+        localStorageMock.getItem.mockReturnValue(null);
+
         dataService = new DataService();
+
+        // Manually attach mocks to the instances created by DataService
+        dataService.syncManager.initialize = vi.fn().mockResolvedValue(undefined);
+        dataService.syncManager.sync = vi.fn().mockResolvedValue({ success: true });
+        dataService.syncManager.syncFromCloud = vi.fn().mockResolvedValue({ success: true });
+        dataService.syncManager.getSyncStatus = vi.fn().mockResolvedValue({ isInitialized: true });
+        dataService.syncManager.destroy = vi.fn();
+        dataService.syncManager.on = vi.fn();
+        dataService.syncManager.off = vi.fn();
+        dataService.syncManager.emit = vi.fn();
+
+        dataService.localCache.saveData = vi.fn().mockResolvedValue(undefined);
+        dataService.localCache.loadData = vi.fn().mockResolvedValue(null);
+        dataService.localCache.getDeviceId = vi.fn().mockReturnValue('test-device-id');
+        dataService.localCache.getSyncMetadata = vi.fn().mockResolvedValue({});
+        dataService.localCache.updateSyncMetadata = vi.fn().mockResolvedValue(undefined);
         mockCollectionData = {
             version: '1.0',
             lastUpdated: '2025-01-07T10:30:00Z',
@@ -46,6 +99,10 @@ describe('DataService', () => {
 
     describe('loadCollection', () => {
         it('should load and parse collection data successfully', async () => {
+            // Mock that no cached data exists, so it falls back to static file
+            dataService.localCache.loadData.mockResolvedValueOnce(null);
+            dataService.syncManager.syncFromCloud.mockRejectedValueOnce(new Error('No gist configured'));
+
             fetch.mockResolvedValueOnce({
                 ok: true,
                 json: () => Promise.resolve(mockCollectionData)
@@ -63,6 +120,10 @@ describe('DataService', () => {
         });
 
         it('should handle network errors', async () => {
+            // Mock that no cached data exists and sync fails
+            dataService.localCache.loadData.mockResolvedValueOnce(null);
+            dataService.syncManager.syncFromCloud.mockRejectedValueOnce(new Error('No gist configured'));
+
             fetch.mockRejectedValueOnce(new TypeError('Network error'));
 
             await expect(dataService.loadCollection()).rejects.toThrow(
@@ -71,6 +132,9 @@ describe('DataService', () => {
         });
 
         it('should handle HTTP errors', async () => {
+            dataService.localCache.loadData.mockResolvedValueOnce(null);
+            dataService.syncManager.syncFromCloud.mockRejectedValueOnce(new Error('No gist configured'));
+
             fetch.mockResolvedValueOnce({
                 ok: false,
                 status: 404,
@@ -83,6 +147,9 @@ describe('DataService', () => {
         });
 
         it('should handle invalid JSON', async () => {
+            dataService.localCache.loadData.mockResolvedValueOnce(null);
+            dataService.syncManager.syncFromCloud.mockRejectedValueOnce(new Error('No gist configured'));
+
             fetch.mockResolvedValueOnce({
                 ok: true,
                 json: () => Promise.reject(new SyntaxError('Invalid JSON'))
@@ -94,6 +161,9 @@ describe('DataService', () => {
         });
 
         it('should handle invalid collection format', async () => {
+            dataService.localCache.loadData.mockResolvedValueOnce(null);
+            dataService.syncManager.syncFromCloud.mockRejectedValueOnce(new Error('No gist configured'));
+
             const invalidData = { invalid: 'data' };
             fetch.mockResolvedValueOnce({
                 ok: true,
@@ -106,6 +176,9 @@ describe('DataService', () => {
         });
 
         it('should skip invalid audiobook data and continue', async () => {
+            dataService.localCache.loadData.mockResolvedValueOnce(null);
+            dataService.syncManager.syncFromCloud.mockRejectedValueOnce(new Error('No gist configured'));
+
             const dataWithInvalidBook = {
                 ...mockCollectionData,
                 audiobooks: [
@@ -125,6 +198,9 @@ describe('DataService', () => {
         });
 
         it('should use custom filename when provided', async () => {
+            dataService.localCache.loadData.mockResolvedValueOnce(null);
+            dataService.syncManager.syncFromCloud.mockRejectedValueOnce(new Error('No gist configured'));
+
             fetch.mockResolvedValueOnce({
                 ok: true,
                 json: () => Promise.resolve(mockCollectionData)
@@ -133,6 +209,24 @@ describe('DataService', () => {
             await dataService.loadCollection('custom.json');
 
             expect(fetch).toHaveBeenCalledWith('/data/custom.json');
+        });
+
+        it('should load from cache when available', async () => {
+            const cachedData = {
+                metadata: {
+                    version: '1.0',
+                    lastModified: '2025-01-07T10:30:00Z'
+                },
+                audiobooks: mockCollectionData.audiobooks
+            };
+
+            dataService.localCache.loadData.mockResolvedValueOnce(cachedData);
+
+            const result = await dataService.loadCollection();
+
+            expect(result.version).toBe('1.0');
+            expect(result.audiobooks).toHaveLength(2);
+            expect(fetch).not.toHaveBeenCalled(); // Should not fetch from static file
         });
     });
 
@@ -273,24 +367,117 @@ describe('DataService', () => {
     });
 
     describe('importCollection', () => {
-        it('should import and validate JSON string', () => {
+        it('should import and validate JSON string', async () => {
             const jsonString = JSON.stringify(mockCollectionData);
-            const result = dataService.importCollection(jsonString);
+            const currentCollection = {
+                version: '1.0',
+                lastUpdated: '2025-01-07T09:30:00Z',
+                audiobooks: [],
+                customGenres: [],
+                customMoods: []
+            };
+
+            const result = await dataService.importCollection(jsonString, currentCollection);
 
             expect(result.version).toBe('1.0');
             expect(result.audiobooks).toHaveLength(2);
             expect(result.audiobooks[0]).toBeInstanceOf(Audiobook);
+            expect(dataService.localCache.saveData).toHaveBeenCalled();
         });
 
-        it('should handle invalid JSON', () => {
-            expect(() => dataService.importCollection('invalid json'))
-                .toThrow('Invalid JSON format');
+        it('should handle invalid JSON', async () => {
+            await expect(dataService.importCollection('invalid json'))
+                .rejects.toThrow('Invalid JSON format');
         });
 
-        it('should handle invalid collection format', () => {
+        it('should handle invalid collection format', async () => {
             const invalidData = JSON.stringify({ invalid: 'data' });
-            expect(() => dataService.importCollection(invalidData))
-                .toThrow('Invalid collection format');
+            await expect(dataService.importCollection(invalidData))
+                .rejects.toThrow('Invalid collection format');
+        });
+    });
+
+    describe('sync-aware operations', () => {
+        let mockCollection;
+
+        beforeEach(() => {
+            mockCollection = {
+                version: '1.0',
+                lastUpdated: '2025-01-07T10:30:00Z',
+                audiobooks: [new Audiobook({ id: 'test-1', title: 'Test Book', author: 'Test Author' })],
+                customGenres: [],
+                customMoods: []
+            };
+        });
+
+        describe('addAudiobook', () => {
+            it('should add audiobook and trigger sync', async () => {
+                const newBook = new Audiobook({ id: 'test-2', title: 'New Book', author: 'New Author' });
+
+                const result = await dataService.addAudiobook(newBook, mockCollection);
+
+                expect(result.audiobooks).toHaveLength(2);
+                expect(result.audiobooks[1]).toBe(newBook);
+                expect(dataService.localCache.saveData).toHaveBeenCalled();
+            });
+        });
+
+        describe('updateAudiobook', () => {
+            it('should update audiobook and trigger sync', async () => {
+                const updatedBook = new Audiobook({
+                    id: 'test-1',
+                    title: 'Updated Book',
+                    author: 'Test Author'
+                });
+
+                const result = await dataService.updateAudiobook(updatedBook, mockCollection);
+
+                expect(result.audiobooks[0].title).toBe('Updated Book');
+                expect(dataService.localCache.saveData).toHaveBeenCalled();
+            });
+
+            it('should throw error if audiobook not found', async () => {
+                const nonExistentBook = new Audiobook({
+                    id: 'non-existent',
+                    title: 'Not Found',
+                    author: 'Unknown'
+                });
+
+                await expect(dataService.updateAudiobook(nonExistentBook, mockCollection))
+                    .rejects.toThrow('Audiobook not found in collection');
+            });
+        });
+
+        describe('removeAudiobook', () => {
+            it('should remove audiobook and trigger sync', async () => {
+                const result = await dataService.removeAudiobook('test-1', mockCollection);
+
+                expect(result.audiobooks).toHaveLength(0);
+                expect(dataService.localCache.saveData).toHaveBeenCalled();
+            });
+
+            it('should throw error if audiobook not found', async () => {
+                await expect(dataService.removeAudiobook('non-existent', mockCollection))
+                    .rejects.toThrow('Audiobook not found in collection');
+            });
+        });
+
+        describe('getSyncStatus', () => {
+            it('should return sync status', async () => {
+                await dataService.initialize();
+                const status = await dataService.getSyncStatus();
+
+                expect(status.isInitialized).toBe(true);
+            });
+        });
+
+        describe('manualSync', () => {
+            it('should trigger manual sync', async () => {
+                const result = await dataService.manualSync();
+
+                expect(dataService.syncManager.sync).toHaveBeenCalled();
+                expect(result.success).toBe(true);
+            });
         });
     });
 

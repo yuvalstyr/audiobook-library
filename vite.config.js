@@ -4,5 +4,8 @@ export default defineConfig({
     base: process.env.NODE_ENV === 'production' ? '/audiobook-library/' : '/',
     build: {
         outDir: 'dist'
+    },
+    test: {
+        environment: 'jsdom'
     }
 })

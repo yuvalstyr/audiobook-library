@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, test } from 'vitest';
+import { describe, it, expect, beforeEach, test, vi } from 'vitest';
 import { ImportExportService } from './ImportExportService.js';
 import { Audiobook } from '../models/Audiobook.js';
 
@@ -7,7 +7,24 @@ describe('ImportExportService', () => {
     let mockCollection;
 
     beforeEach(() => {
-        service = new ImportExportService();
+        // Mock localStorage
+        global.localStorage = {
+            getItem: vi.fn().mockReturnValue(null),
+            setItem: vi.fn(),
+            removeItem: vi.fn(),
+            clear: vi.fn()
+        };
+
+        // Mock browser APIs for export functionality
+        global.URL = {
+            createObjectURL: vi.fn().mockReturnValue('blob:mock-url'),
+            revokeObjectURL: vi.fn()
+        };
+
+        global.Blob = vi.fn().mockImplementation((content, options) => ({
+            size: content[0].length,
+            type: options?.type || 'application/octet-stream'
+        }));
 
         mockCollection = {
             version: '1.0',
@@ -45,26 +62,54 @@ describe('ImportExportService', () => {
             customGenres: ['adventure'],
             customMoods: ['epic', 'technical']
         };
+
+        service = new ImportExportService();
+
+        // Mock sync manager and local cache
+        service.syncManager = {
+            isInitialized: true,
+            getSyncStatus: vi.fn().mockResolvedValue({
+                deviceId: 'test-device-123',
+                lastSyncTime: '2025-01-07T10:00:00Z',
+                hasGistId: true,
+                syncStatus: 'synced'
+            }),
+            syncToCloud: vi.fn().mockResolvedValue()
+        };
+
+        service.localCache = {
+            getCacheStats: vi.fn().mockResolvedValue({
+                deviceId: 'test-device-123'
+            }),
+            loadData: vi.fn().mockResolvedValue({
+                audiobooks: mockCollection.audiobooks,
+                metadata: {
+                    lastModified: '2025-01-07T10:00:00Z',
+                    deviceId: 'test-device-123'
+                }
+            })
+        };
     });
 
     describe('exportJSON', () => {
-        test('should export collection as JSON string', () => {
-            const result = service.exportJSON(mockCollection);
+        test('should export collection as JSON string with sync metadata', async () => {
+            const result = await service.exportJSON(mockCollection);
 
             expect(result.success).toBe(true);
             expect(result.bookCount).toBe(2);
             expect(result.filename).toMatch(/audiobooks-backup-\d{4}-\d{2}-\d{2}\.json/);
             expect(typeof result.fileSize).toBe('number');
+            expect(result.includedSyncMetadata).toBe(true);
         });
 
-        test('should use custom filename when provided', () => {
+        test('should use custom filename when provided', async () => {
             const customFilename = 'my-custom-backup.json';
-            const result = service.exportJSON(mockCollection, customFilename);
+            const result = await service.exportJSON(mockCollection, customFilename);
 
             expect(result.filename).toBe(customFilename);
         });
 
-        test('should handle empty collection', () => {
+        test('should handle empty collection', async () => {
             const emptyCollection = {
                 version: '1.0',
                 lastUpdated: '2025-01-07T10:30:00Z',
@@ -73,16 +118,21 @@ describe('ImportExportService', () => {
                 customMoods: []
             };
 
-            const result = service.exportJSON(emptyCollection);
+            const result = await service.exportJSON(emptyCollection);
 
             expect(result.success).toBe(true);
             expect(result.bookCount).toBe(0);
         });
 
-        test('should throw error for invalid collection', () => {
-            expect(() => {
-                service.exportJSON(null);
-            }).toThrow('Failed to export JSON');
+        test('should throw error for invalid collection', async () => {
+            await expect(service.exportJSON(null)).rejects.toThrow('Failed to export JSON');
+        });
+
+        test('should export without sync metadata when disabled', async () => {
+            const result = await service.exportJSON(mockCollection, null, { includeSyncMetadata: false });
+
+            expect(result.success).toBe(true);
+            expect(result.includedSyncMetadata).toBe(false);
         });
     });
 
@@ -265,8 +315,8 @@ describe('ImportExportService', () => {
             };
         });
 
-        test('should merge collections with merge strategy', () => {
-            const result = service.mergeCollections(existingCollection, importedCollection, 'merge');
+        test('should merge collections with merge strategy', async () => {
+            const result = await service.mergeCollections(existingCollection, importedCollection, 'merge');
 
             expect(result.audiobooks.length).toBe(3);
 
@@ -287,8 +337,8 @@ describe('ImportExportService', () => {
             expect(result.customMoods).toEqual(expect.arrayContaining(['epic', 'fast-paced']));
         });
 
-        test('should append collections with append strategy', () => {
-            const result = service.mergeCollections(existingCollection, importedCollection, 'append');
+        test('should append collections with append strategy', async () => {
+            const result = await service.mergeCollections(existingCollection, importedCollection, 'append');
 
             expect(result.audiobooks.length).toBe(3);
 
@@ -301,8 +351,8 @@ describe('ImportExportService', () => {
             expect(newBook.title).toBe('New Book 1');
         });
 
-        test('should replace collections with replace strategy', () => {
-            const result = service.mergeCollections(existingCollection, importedCollection, 'replace');
+        test('should replace collections with replace strategy', async () => {
+            const result = await service.mergeCollections(existingCollection, importedCollection, 'replace');
 
             expect(result.audiobooks.length).toBe(2);
             expect(result.audiobooks.map(book => book.id)).toEqual(['existing-1', 'new-1']);
@@ -372,6 +422,241 @@ describe('ImportExportService', () => {
             expect(lines.length).toBe(2);
             expect(lines[0]).toContain('Title,Author,Narrator');
             expect(lines[1]).toContain('Example Book Title');
+        });
+    });
+
+    describe('Sync-aware functionality', () => {
+        describe('detectImportSyncConflict', () => {
+            test('should detect conflict when importing from different device', async () => {
+                const importData = {
+                    audiobooks: [{ id: 'test-1', title: 'Test Book' }],
+                    exportMetadata: {
+                        syncMetadata: {
+                            deviceId: 'different-device-456',
+                            lastSyncTime: '2025-01-07T11:00:00Z',
+                            exportedFromSync: true
+                        }
+                    }
+                };
+
+                const conflict = await service.detectImportSyncConflict(importData);
+
+                expect(conflict).toBeTruthy();
+                expect(conflict.type).toBe('import_sync_conflict');
+                expect(conflict.importDeviceId).toBe('different-device-456');
+                expect(conflict.currentDeviceId).toBe('test-device-123');
+            });
+
+            test('should not detect conflict for same device', async () => {
+                const importData = {
+                    audiobooks: [{ id: 'test-1', title: 'Test Book' }],
+                    exportMetadata: {
+                        syncMetadata: {
+                            deviceId: 'test-device-123',
+                            lastSyncTime: '2025-01-07T11:00:00Z',
+                            exportedFromSync: true
+                        }
+                    }
+                };
+
+                const conflict = await service.detectImportSyncConflict(importData);
+
+                expect(conflict).toBeNull();
+            });
+
+            test('should not detect conflict when no sync metadata', async () => {
+                const importData = {
+                    audiobooks: [{ id: 'test-1', title: 'Test Book' }]
+                };
+
+                const conflict = await service.detectImportSyncConflict(importData);
+
+                expect(conflict).toBeNull();
+            });
+        });
+
+        describe('performSyncAwareMerge', () => {
+            test('should merge books based on modification time', async () => {
+                const existingBooks = [
+                    {
+                        id: 'book-1',
+                        title: 'Old Title',
+                        lastModified: '2025-01-01T00:00:00Z'
+                    }
+                ];
+
+                const importedBooks = [
+                    {
+                        id: 'book-1',
+                        title: 'New Title',
+                        lastModified: '2025-01-07T00:00:00Z'
+                    }
+                ];
+
+                const result = await service.performSyncAwareMerge(existingBooks, importedBooks);
+
+                expect(result.length).toBe(1);
+                expect(result[0].title).toBe('New Title');
+                expect(result[0].mergeInfo.source).toBe('imported');
+                expect(result[0].mergeInfo.reason).toBe('newer_modification_time');
+            });
+
+            test('should keep existing book when it is newer', async () => {
+                const existingBooks = [
+                    {
+                        id: 'book-1',
+                        title: 'Newer Title',
+                        lastModified: '2025-01-07T00:00:00Z'
+                    }
+                ];
+
+                const importedBooks = [
+                    {
+                        id: 'book-1',
+                        title: 'Older Title',
+                        lastModified: '2025-01-01T00:00:00Z'
+                    }
+                ];
+
+                const result = await service.performSyncAwareMerge(existingBooks, importedBooks);
+
+                expect(result.length).toBe(1);
+                expect(result[0].title).toBe('Newer Title');
+                expect(result[0].mergeInfo.source).toBe('existing');
+            });
+
+            test('should add new books from import', async () => {
+                const existingBooks = [
+                    { id: 'book-1', title: 'Existing Book' }
+                ];
+
+                const importedBooks = [
+                    { id: 'book-2', title: 'New Book' }
+                ];
+
+                const result = await service.performSyncAwareMerge(existingBooks, importedBooks);
+
+                expect(result.length).toBe(2);
+                expect(result.find(b => b.id === 'book-1').title).toBe('Existing Book');
+                expect(result.find(b => b.id === 'book-2').title).toBe('New Book');
+                expect(result.find(b => b.id === 'book-2').mergeInfo.reason).toBe('new_book');
+            });
+        });
+
+        describe('mergeCollections with sync-aware strategy', () => {
+            test('should use sync-aware merge strategy', async () => {
+                const existingCollection = {
+                    audiobooks: [
+                        {
+                            id: 'book-1',
+                            title: 'Old Title',
+                            lastModified: '2025-01-01T00:00:00Z'
+                        }
+                    ],
+                    customGenres: ['fantasy'],
+                    customMoods: ['epic']
+                };
+
+                const importedCollection = {
+                    audiobooks: [
+                        {
+                            id: 'book-1',
+                            title: 'New Title',
+                            lastModified: '2025-01-07T00:00:00Z'
+                        }
+                    ],
+                    customGenres: ['sci-fi'],
+                    customMoods: ['fast-paced']
+                };
+
+                // Mock syncToCloud to avoid actual sync
+                service.syncManager.syncToCloud = vi.fn().mockResolvedValue();
+
+                const result = await service.mergeCollections(
+                    existingCollection,
+                    importedCollection,
+                    'sync-aware'
+                );
+
+                expect(result.audiobooks.length).toBe(1);
+                expect(result.audiobooks[0].title).toBe('New Title');
+                expect(result.metadata.mergeStrategy).toBe('sync-aware');
+            });
+        });
+
+        describe('backup functionality', () => {
+            test('should create import backup', async () => {
+                // Mock localStorage
+                const mockLocalStorage = {
+                    getItem: vi.fn().mockReturnValue('[]'),
+                    setItem: vi.fn()
+                };
+                global.localStorage = mockLocalStorage;
+
+                const backupInfo = await service.createImportBackup(mockCollection);
+
+                expect(backupInfo.filename).toMatch(/audiobooks-pre-import-backup-/);
+                expect(backupInfo.bookCount).toBe(2);
+                expect(mockLocalStorage.setItem).toHaveBeenCalled();
+            });
+
+            test('should get import backups', () => {
+                const mockBackups = [
+                    {
+                        filename: 'backup1.json',
+                        timestamp: '2025-01-07T10:00:00Z',
+                        bookCount: 5
+                    }
+                ];
+
+                global.localStorage = {
+                    getItem: vi.fn().mockReturnValue(JSON.stringify(mockBackups))
+                };
+
+                const backups = service.getImportBackups();
+
+                expect(backups).toEqual(mockBackups);
+            });
+
+            test('should handle localStorage errors gracefully', () => {
+                global.localStorage = {
+                    getItem: vi.fn().mockImplementation(() => {
+                        throw new Error('Storage error');
+                    })
+                };
+
+                const backups = service.getImportBackups();
+
+                expect(backups).toEqual([]);
+            });
+        });
+
+        describe('helper methods', () => {
+            test('should detect book differences', () => {
+                const book1 = {
+                    title: 'Same Title',
+                    author: 'Same Author',
+                    rating: 4.5
+                };
+
+                const book2 = {
+                    title: 'Same Title',
+                    author: 'Different Author',
+                    rating: 4.5
+                };
+
+                expect(service.booksAreDifferent(book1, book2)).toBe(true);
+                expect(service.booksAreDifferent(book1, book1)).toBe(false);
+            });
+
+            test('should get recommended conflict action', () => {
+                const importTime = new Date('2025-01-07T12:00:00Z');
+                const currentTime = new Date('2025-01-07T10:00:00Z');
+
+                expect(service.getRecommendedConflictAction(importTime, currentTime)).toBe('use_import');
+                expect(service.getRecommendedConflictAction(currentTime, importTime)).toBe('use_current');
+                expect(service.getRecommendedConflictAction(importTime, importTime)).toBe('manual_review');
+            });
         });
     });
 });

@@ -12,6 +12,8 @@ import { DataService } from './services/DataService.js'
 import { StorageService } from './services/StorageService.js'
 import { FilterManager } from './utils/FilterManager.js'
 import { loadingIndicator } from './utils/LoadingIndicator.js'
+import { SyncStatusIndicator } from './components/SyncStatusIndicator.js'
+import { OnboardingManager } from './services/OnboardingManager.js'
 
 class AudiobookLibraryApp {
     constructor() {
@@ -26,6 +28,8 @@ class AudiobookLibraryApp {
         this.importExportModal = null;
         this.filterManager = null;
         this.collection = null;
+        this.syncStatusIndicator = null;
+        this.onboardingManager = null;
 
         this.init();
     }
@@ -34,6 +38,12 @@ class AudiobookLibraryApp {
         try {
             // Initialize components
             await this.initializeComponents();
+
+            // Initialize sync system
+            await this.initializeSync();
+
+            // Initialize onboarding
+            await this.initializeOnboarding();
 
             // Load audiobook collection
             await this.loadCollection();
@@ -87,6 +97,52 @@ class AudiobookLibraryApp {
         this.bookDetailModal = null;
         this.deleteConfirmationModal = null;
         this.importExportModal = null;
+    }
+
+    /**
+     * Initialize onboarding manager
+     */
+    async initializeOnboarding() {
+        try {
+            this.onboardingManager = new OnboardingManager(this.dataService);
+            await this.onboardingManager.initialize();
+            console.log('Onboarding manager initialized');
+        } catch (error) {
+            console.error('Failed to initialize onboarding manager:', error);
+            // Continue without onboarding - not critical for app functionality
+        }
+    }
+
+    /**
+     * Initialize sync system and status indicator
+     */
+    async initializeSync() {
+        try {
+            // Initialize the data service (which initializes sync)
+            await this.dataService.initialize({
+                syncInterval: 30000, // 30 seconds
+                conflictResolution: 'manual'
+            });
+
+            // Create sync status indicator
+            const syncManager = this.dataService.getSyncManager();
+            this.syncStatusIndicator = new SyncStatusIndicator(syncManager);
+
+            // Show sync status indicator in the UI
+            const appContainer = document.body;
+            this.syncStatusIndicator.show(appContainer);
+
+            // Set up data service event listeners
+            this.dataService.on('syncError', (error) => {
+                console.warn('Sync error:', error);
+                this.showSyncError(error.message);
+            });
+
+            console.log('Sync system initialized');
+        } catch (error) {
+            console.error('Failed to initialize sync system:', error);
+            // Continue without sync - app should still work with local storage
+        }
     }
 
     async loadCollection() {
@@ -461,11 +517,9 @@ class AudiobookLibraryApp {
      */
     async handleBookFormSubmit(audiobook, action) {
         try {
-            if (action === 'add') {
-                // Add to collection
-                this.collection.audiobooks.push(audiobook);
-                this.collection.lastUpdated = new Date().toISOString();
+            let updatedCollection;
 
+            if (action === 'add') {
                 // Update custom genres/moods if any were added
                 const formCustomGenres = this.bookForm.getCustomGenres();
                 const formCustomMoods = this.bookForm.getCustomMoods();
@@ -482,37 +536,11 @@ class AudiobookLibraryApp {
                     }
                 });
 
-                // Save entire collection to storage
-                await this.storageService.saveCollection(this.collection);
-
-                // Update gallery and filter manager
-                this.gallery.setAudiobooks(this.collection.audiobooks);
-                this.filterManager.setAudiobooks(this.collection.audiobooks);
-
-                // Update filters with new options
-                if (this.filters) {
-                    this.filters.updateAvailableFilters(
-                        this.collection.audiobooks,
-                        this.collection.customGenres,
-                        this.collection.customMoods
-                    );
-                }
-
+                // Use sync-aware add method
+                updatedCollection = await this.dataService.addAudiobook(audiobook, this.collection);
                 console.log('Book added successfully:', audiobook.title);
 
             } else if (action === 'edit') {
-                // Update in collection first
-                const index = this.collection.audiobooks.findIndex(book => book.id === audiobook.id);
-                if (index === -1) {
-                    throw new Error('Audiobook not found in collection');
-                }
-
-                this.collection.audiobooks[index] = audiobook;
-                this.collection.lastUpdated = new Date().toISOString();
-
-                // Save entire collection to storage
-                await this.storageService.saveCollection(this.collection);
-
                 // Update custom genres/moods if any were added
                 const formCustomGenres = this.bookForm.getCustomGenres();
                 const formCustomMoods = this.bookForm.getCustomMoods();
@@ -529,21 +557,16 @@ class AudiobookLibraryApp {
                     }
                 });
 
-                // Update gallery and filter manager
-                this.gallery.setAudiobooks(this.collection.audiobooks);
-                this.filterManager.setAudiobooks(this.collection.audiobooks);
-
-                // Update filters with new options
-                if (this.filters) {
-                    this.filters.updateAvailableFilters(
-                        this.collection.audiobooks,
-                        this.collection.customGenres,
-                        this.collection.customMoods
-                    );
-                }
-
+                // Use sync-aware update method
+                updatedCollection = await this.dataService.updateAudiobook(audiobook, this.collection);
                 console.log('Book updated successfully:', audiobook.title);
             }
+
+            // Update local collection reference
+            this.collection = updatedCollection;
+
+            // Update UI components
+            this.updateUIAfterDataChange();
 
         } catch (error) {
             console.error('Failed to save audiobook:', error);
@@ -601,35 +624,14 @@ class AudiobookLibraryApp {
         try {
             console.log('Deleting book:', audiobook.title);
 
-            // Remove from collection
-            const index = this.collection.audiobooks.findIndex(book => book.id === audiobook.id);
-            if (index === -1) {
-                throw new Error('Audiobook not found in collection');
-            }
+            // Use sync-aware remove method
+            const updatedCollection = await this.dataService.removeAudiobook(audiobook.id, this.collection);
 
-            this.collection.audiobooks.splice(index, 1);
-            this.collection.lastUpdated = new Date().toISOString();
+            // Update local collection reference
+            this.collection = updatedCollection;
 
-            // Save updated collection to storage with timeout
-            const savePromise = this.storageService.saveCollection(this.collection);
-            const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Delete operation timed out')), 10000)
-            );
-
-            await Promise.race([savePromise, timeoutPromise]);
-
-            // Update gallery and filter manager
-            this.gallery.setAudiobooks(this.collection.audiobooks);
-            this.filterManager.setAudiobooks(this.collection.audiobooks);
-
-            // Update filters with new options (in case we removed the last book with certain genres/moods)
-            if (this.filters) {
-                this.filters.updateAvailableFilters(
-                    this.collection.audiobooks,
-                    this.collection.customGenres || [],
-                    this.collection.customMoods || []
-                );
-            }
+            // Update UI components
+            this.updateUIAfterDataChange();
 
             console.log('Book deleted successfully:', audiobook.title);
 
@@ -676,24 +678,17 @@ class AudiobookLibraryApp {
         try {
             console.log('Import completed:', stats);
 
-            // Update the collection
-            this.collection = collection;
+            // Use sync-aware import method
+            const updatedCollection = await this.dataService.importCollection(
+                JSON.stringify(collection),
+                this.collection
+            );
 
-            // Save to storage
-            await this.storageService.saveCollection(this.collection);
+            // Update local collection reference
+            this.collection = updatedCollection;
 
-            // Update gallery and filter manager
-            this.gallery.setAudiobooks(this.collection.audiobooks);
-            this.filterManager.setAudiobooks(this.collection.audiobooks);
-
-            // Update filters with new options
-            if (this.filters) {
-                this.filters.updateAvailableFilters(
-                    this.collection.audiobooks,
-                    this.collection.customGenres || [],
-                    this.collection.customMoods || []
-                );
-            }
+            // Update UI components
+            this.updateUIAfterDataChange();
 
             console.log(`Successfully imported ${stats.successful} books`);
 
@@ -710,6 +705,38 @@ class AudiobookLibraryApp {
      */
     handleExportComplete(result, format) {
         console.log(`Export completed: ${result.filename} (${format})`);
+    }
+
+    /**
+     * Update UI components after data changes
+     * @private
+     */
+    updateUIAfterDataChange() {
+        // Update gallery and filter manager
+        this.gallery.setAudiobooks(this.collection.audiobooks);
+        this.filterManager.setAudiobooks(this.collection.audiobooks);
+
+        // Update filters with new options
+        if (this.filters) {
+            this.filters.updateAvailableFilters(
+                this.collection.audiobooks,
+                this.collection.customGenres || [],
+                this.collection.customMoods || []
+            );
+        }
+    }
+
+    /**
+     * Show sync error message
+     * @param {string} message - Error message
+     * @private
+     */
+    showSyncError(message) {
+        // Simple error notification - could be enhanced with a toast system
+        console.warn('Sync error:', message);
+
+        // Could show a temporary notification here
+        // For now, the sync status indicator will show the error state
     }
 
     handleClearFilters() {
@@ -747,6 +774,29 @@ class AudiobookLibraryApp {
                 </div>
             `;
         }
+    }
+
+    /**
+     * Clean up resources when app is destroyed
+     */
+    destroy() {
+        // Clean up sync status indicator
+        if (this.syncStatusIndicator) {
+            this.syncStatusIndicator.destroy();
+        }
+
+        // Clean up onboarding manager
+        if (this.onboardingManager) {
+            this.onboardingManager.destroy();
+        }
+
+        // Clean up data service
+        if (this.dataService) {
+            this.dataService.destroy();
+        }
+
+        // Clean up other components as needed
+        console.log('AudiobookLibraryApp destroyed');
     }
 }
 
