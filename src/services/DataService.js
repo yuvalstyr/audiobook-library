@@ -2,7 +2,9 @@ import { Audiobook } from '../models/Audiobook.js';
 
 export class DataService {
     constructor() {
-        this.baseUrl = '/data/';
+        // Use import.meta.env.BASE_URL for proper base path handling in production
+        const basePath = import.meta.env.BASE_URL || '/';
+        this.baseUrl = `${basePath}data/`;
         this.defaultDataFile = 'audiobooks.json';
     }
 

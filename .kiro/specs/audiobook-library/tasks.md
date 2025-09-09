@@ -71,7 +71,7 @@
   - Ensure WCAG compliance with proper ARIA labels and focus management
   - _Requirements: 6.1, 6.2, 6.3, 6.4_
 
-- [x] 11. Set up GitHub Pages deployment
+- [ ] 11. Set up GitHub Pages deployment
   - Configure GitHub Actions for automated deployment
   - Set up Vite build configuration for GitHub Pages
   - Create deployment workflow with proper base path handling
