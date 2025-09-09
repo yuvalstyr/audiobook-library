@@ -66,7 +66,7 @@ class SetupWizard {
                         <button id="skip-btn" class="px-4 py-2 text-gray-600 hover:text-gray-800">
                             Skip for Now
                         </button>
-                        <button id="next-btn" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <button id="next-btn" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
                             Next
                         </button>
                     </div>
@@ -317,6 +317,8 @@ class SetupWizard {
         const options = this.element.querySelectorAll('[data-option]');
         options.forEach(option => {
             option.addEventListener('click', () => {
+                console.log('Option clicked:', option.dataset.option); // Debug log
+
                 // Remove selection from all options
                 options.forEach(opt => opt.classList.remove('border-blue-500', 'bg-blue-50'));
 
@@ -327,12 +329,15 @@ class SetupWizard {
                 const setupOption = this.element.querySelector('#setup-option');
                 if (setupOption) {
                     setupOption.value = option.dataset.option;
+                    console.log('Setup option set to:', setupOption.value); // Debug log
                 }
 
                 // Enable next button
                 const nextBtn = this.element.querySelector('#next-btn');
                 if (nextBtn) {
                     nextBtn.disabled = false;
+                    nextBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    console.log('Next button enabled'); // Debug log
                 }
             });
         });
@@ -491,15 +496,21 @@ class SetupWizard {
      * Move to next step
      */
     async nextStep() {
+        console.log('nextStep called, current step:', this.currentStep); // Debug log
+
         if (this.currentStep < this.totalSteps) {
             // Validate current step before proceeding
             if (this.currentStep === 1) {
                 const option = this.element.querySelector('#setup-option')?.value;
+                console.log('Step 1 option:', option); // Debug log
                 if (!option) {
+                    console.log('No option selected, not proceeding'); // Debug log
                     return; // Don't proceed without selection
                 }
             } else if (this.currentStep === 2) {
+                console.log('Step 2 gistId:', this.gistId); // Debug log
                 if (!this.gistId) {
+                    console.log('No gist ID, not proceeding'); // Debug log
                     return; // Don't proceed without valid gist ID
                 }
 
@@ -508,6 +519,7 @@ class SetupWizard {
             }
 
             this.currentStep++;
+            console.log('Moving to step:', this.currentStep); // Debug log
             this.updateStep();
         }
     }
